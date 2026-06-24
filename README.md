@@ -20,6 +20,8 @@ projeto-ia-abp/
 ├── charts/
 │   ├── gauge.py                  # Gauge de risco (Plotly)
 │   └── fuzzy.py                  # Gráfico de pertinência fuzzy (Matplotlib)
+├── tests/
+│   └── test_engine.py            # Bateria de testes do motor fuzzy
 └── assets/                       # Recursos estáticos
 ```
 
@@ -38,6 +40,14 @@ projeto-ia-abp/
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+## Como testar a lógica fuzzy
+
+```bash
+python tests/test_engine.py
+```
+
+Executa 20 verificações automáticas: 17 cenários com classificação esperada (Baixo / Médio / Alto / Crítico) e 3 testes de monotonicidade que garantem que vento crescente nunca reduz o risco calculado.
 
 ## Tecnologias
 

@@ -133,95 +133,128 @@ Sem essas regras complementares, combinações como 35°C + 0% de umidade + vent
 
 ---
 
-## 6. Exemplos com Resultados Esperados
+## 6. Exemplos com Resultados Medidos
 
-Os valores de saída variam continuamente; os abaixo são estimativas baseadas na análise das ativações das regras.
+Os valores abaixo foram obtidos executando `python tests/test_engine.py` com o motor em produção.
 
 ### Exemplo 1 — Dia de outono típico (Baixo risco)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
-| Temperatura | 15°C | Baixa / Média (transição) |
-| Umidade | 80% | Alta |
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
+| Temperatura | 10°C | Baixa |
+| Umidade | 85% | Alta |
 | Vento | 10 km/h | Fraco |
 
-**Regras ativas:** Média+Alta→Baixo (forte), Baixa+Alta→Baixo, Baixa+Fraco→Baixo  
-**Saída esperada:** ~10–20% → **Baixo**  
-**Justificativa:** Temperatura amena, alta umidade e vento fraco criam condições muito seguras. Vegetação úmida não sustenta ignição.
+**Regras ativas:** Baixa+Alta→Baixo, Baixa+Fraco→Baixo  
+**Saída medida:** **11.7% → Baixo**  
+**Justificativa:** Temperatura baixa e umidade muito alta eliminam praticamente qualquer risco de ignição.
 
 ---
 
 ### Exemplo 2 — Primavera seca com vento moderado (Médio risco)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
 | Temperatura | 28°C | Média |
 | Umidade | 30% | Baixa |
-| Vento | 25 km/h | Moderado |
+| Vento | 25 km/h | Moderado (início) |
 
-**Regras ativas:** Média+Baixa→Médio (dominante)  
-**Saída esperada:** ~45–55% → **Médio**  
-**Justificativa:** Temperatura moderada com umidade baixa cria risco intermediário. Vento moderado contribui mas não domina.
+**Regras ativas:** Média+Baixa→Médio  
+**Saída medida:** **48.2% → Médio**  
+**Justificativa:** Temperatura moderada com umidade baixa posiciona o risco no centro da faixa Médio. Vento moderado tem peso pequeno aqui.
 
 ---
 
 ### Exemplo 3 — Tarde de verão quente e seca (Alto risco)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
 | Temperatura | 38°C | Alta |
 | Umidade | 20% | Crítica (transição para Baixa) |
 | Vento | 30 km/h | Moderado |
 
-**Regras ativas:** Alta+Crítica→Alto (nova regra 6), Alta+Baixa→Alto  
-**Saída esperada:** ~70–78% → **Alto**  
-**Justificativa:** Temperatura alta combinada com umidade próxima do crítico representa risco elevado de ignição. Vento moderado aumenta a propagação.
+**Regras ativas:** Alta+Crítica→Alto (regra 6), Alta+Baixa→Alto (regra 7)  
+**Saída medida:** **80.8% → Alto**  
+**Justificativa:** Duas regras de risco Alto disparando em conjunto posicionam o centroide no topo da faixa Alto, próximo ao limiar de Crítico.
 
 ---
 
 ### Exemplo 4 — Onda de calor extrema com ressecamento (Crítico)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
-| Temperatura | 45°C | Alta (transição para Crítica) |
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
+| Temperatura | 48°C | Crítica |
 | Umidade | 5% | Crítica |
 | Vento | 90 km/h | Forte/Crítico |
 
-**Regras ativas:** Crítica+Crítica→Crítico, Crítica+VentoCrítico→Crítico, Alta+Crítica+Forte→Crítico, Alta+Crítica+Crítico→Crítico  
-**Saída esperada:** ~88–95% → **Crítico**  
-**Justificativa:** Múltiplas regras de máxima severidade ativadas simultaneamente. Condição de catástrofe iminente.
+**Regras ativas:** Crítica+Crítica→Crítico, Crítica+VentoCrítico→Crítico, Alta+Crítica+Forte→Crítico  
+**Saída medida:** **94.8% → Crítico**  
+**Justificativa:** Temperatura no pico da faixa crítica elimina a pertinência em "Alta", deixando apenas regras Crítico ativas. Resultado concentrado no extremo superior.
+
+> **Caso de borda documentado:** 45°C + 5% + 90 km/h retorna **84.3% → Alto**. Nessa temperatura, "Alta" e "Crítica" têm pertinência igual (0.375 cada), o que faz regras de Alto e Crítico dispararem com a mesma força. O centroide fica 0.7% abaixo do limiar de 85%, classificando como Alto — comportamento matematicamente correto do sistema fuzzy.
 
 ---
 
 ### Exemplo 5 — Inverno anômalo: frio com vento muito forte (Médio)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
 | Temperatura | 10°C | Baixa |
 | Umidade | 15% | Crítica (transição) |
 | Vento | 70 km/h | Forte |
 
 **Regras ativas:** Baixa+Forte→Médio  
-**Saída esperada:** ~40–50% → **Médio**  
-**Justificativa:** Mesmo com temperatura baixa, vento forte pode propagar fagulhas e ressecar vegetação. Risco médio é adequado para a situação.
+**Saída medida:** **48.1% → Médio**  
+**Justificativa:** Temperatura baixa impede risco alto mesmo com vento forte. O sistema pondera: frio protege, vento preocupa. Resultado intermediário.
 
 ---
 
 ### Exemplo 6 — Calor extremo com chuva recente (Médio)
 
-| Entrada | Valor | Classificação fuzzy dominante |
-|---------|-------|-------------------------------|
+| Entrada | Valor | Conjunto fuzzy dominante |
+|---------|-------|--------------------------|
 | Temperatura | 48°C | Crítica |
 | Umidade | 85% | Alta |
 | Vento | 20 km/h | Fraco |
 
-**Regras ativas:** Crítica+Alta→Médio (nova regra 17)  
-**Saída esperada:** ~40–55% → **Médio**  
-**Justificativa:** Temperatura extrema, porém umidade muito alta inibe a ignição. O sistema reconhece o calor mas pondera o efeito protetor da umidade.
+**Regras ativas:** Crítica+Alta→Médio (regra 17)  
+**Saída medida:** **48.1% → Médio**  
+**Justificativa:** O sistema demonstra comportamento não trivial: temperatura extrema mas umidade muito alta inibe ignição. A regra de cobertura adicional (não presente no Colab original) captura esse cenário corretamente.
 
 ---
 
-## 7. Arquitetura do Sistema
+## 7. Bateria de Testes Automatizados
+
+O arquivo `tests/test_engine.py` valida o motor sem depender da interface Streamlit.
+
+```bash
+python tests/test_engine.py
+```
+
+**Resultado atual: 20/20 testes passando.**
+
+### Grupos de teste
+
+| Grupo | Quantidade | O que verifica |
+|-------|-----------|----------------|
+| Classificação — Baixo | 3 | Cenários de frio/umidade alta retornam Baixo |
+| Classificação — Médio | 4 | Cenários moderados retornam Médio |
+| Classificação — Alto  | 4 | Calor + seca sem vento extremo retorna Alto |
+| Classificação — Crítico | 3 | Condições extremas retornam Crítico |
+| Caso de borda | 1 | 45°C + 5% + 90km/h = Alto (84.3%, próximo ao limiar) |
+| Regressão | 2 | Bugs corrigidos não reaparecem |
+| Monotonicidade | 3 | Vento crescente nunca reduz o risco calculado |
+
+### Testes de regressão
+
+Os dois casos de regressão documentam bugs identificados e corrigidos durante o desenvolvimento:
+
+- `5°C + 10% + 88km/h` → deve ser **Médio** (era incorretamente classificado como Crítico na versão anterior do engine)
+- `35°C + 0% + 20km/h` → deve ser **Alto** (retornava Baixo por ausência de regra de cobertura)
+
+---
+
+## 8. Arquitetura do Sistema
 
 ```
 app.py (Streamlit)
@@ -242,7 +275,7 @@ app.py (Streamlit)
 
 ---
 
-## 8. Decisões de Projeto Relevantes
+## 9. Decisões de Projeto Relevantes
 
 **Por que 22 regras e não as 16 do Colab?**  
 O conjunto de 16 regras do notebook deixava lacunas — combinações de entrada que não ativavam nenhuma regra. Nesses casos, o scikit-fuzzy retorna um output indefinido e o sistema usava um fallback de 25% (Baixo), que é semanticamente incorreto para cenários como 40°C + 50% de umidade. As 6 regras adicionais fecham essas lacunas sem contradizer as originais.
