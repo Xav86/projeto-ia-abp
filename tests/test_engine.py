@@ -43,9 +43,17 @@ CENARIOS = [
     # Caso de borda: 45C gera 84.x% (Alto, perto do limiar de 85%)
     ("Borda: 45C + 5% + 90km",      45,  5, 90, "Alto"),
 
+    # Efeito do vento critico em diferentes temperaturas (umidade fixa em 27%)
+    # Mostra que temperatura determina se vento extremo escala para Critico
+    ("Vento critico: frio",          10, 27, 100, "Médio"),   # frio + vento extremo = Medio
+    ("Vento critico: temp moderada", 25, 27, 100, "Médio"),   # moderado + vento extremo = Medio
+    ("Vento critico: temp alta ini", 35, 27, 100, "Alto"),    # alta (inicio, 0.5) + vento = Alto
+    ("Vento critico: temp alta pico",40, 27, 100, "Crítico"), # alta (pico, 1.0) + vento = Critico
+
     # Regressoes (bugs corrigidos)
     ("Regr: frio+seco+vento != Critico",   5, 10, 88, "Médio"),
     ("Regr: 35C+0%+20km deve ser Alto",   35,  0, 20, "Alto"),
+    ("Regr: frio+vento critico != Baixo", 10, 27, 100, "Médio"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -58,6 +66,20 @@ MONOTONICOS = [
     ("35C + 0% umidade",   35,  0, [20, 40, 80, 100]),
     ("40C + 10% umidade",  40, 10, [10, 30, 70,  95]),
     ("30C + 5% umidade",   30,  5, [ 0, 25, 60,  90]),
+    # Vento critico com umidade baixa: mostra escalada ao variar temperatura
+    ("35C + 27% umidade",  35, 27, [ 0, 40, 90, 100]),
+    ("40C + 27% umidade",  40, 27, [ 0, 40, 90, 100]),
+]
+
+# ---------------------------------------------------------------------------
+# Teste de monotonicidade de temperatura
+# Temperatura crescente (vento e umidade fixos) NAO pode reduzir o risco
+# ---------------------------------------------------------------------------
+MONOTONICOS_TEMP = [
+    # 27% umidade + 100km/h: Baixo -> Medio -> Alto -> Critico conforme temp sobe
+    ("umid=27%  vento=100km/h", [10, 25, 35, 40], 27, 100),
+    # 5% umidade + 20km/h: baixo vento nao deve inverter a progressao
+    ("umid=5%   vento=20km/h",  [10, 25, 35, 45], 5,   20),
 ]
 
 # ---------------------------------------------------------------------------
@@ -117,6 +139,30 @@ def run():
         else:
             print(f"  {VERMELHO}FAIL{RESET}  {desc}  [temp={t}C  umid={u}%]")
             print(f"       {VERMELHO}{progresso}{RESET}  <- risco caiu com vento maior")
+            falhou += 1
+
+    print()
+    sep()
+    print("  MONOTONICIDADE -- temperatura crescente nao pode reduzir o risco")
+    sep()
+
+    for desc, temps, u, v in MONOTONICOS_TEMP:
+        resultados = [(t, calcular_risco(t, u, v)) for t in temps]
+        ok = all(
+            ORDEM[resultados[i + 1][1]["risco"]] >= ORDEM[resultados[i][1]["risco"]]
+            for i in range(len(resultados) - 1)
+        )
+        progresso = "  ->  ".join(
+            f"{t}C => {r['risco']} ({r['probabilidade']}%)"
+            for t, r in resultados
+        )
+        if ok:
+            print(f"  {VERDE}PASS{RESET}  {desc}")
+            print(f"       {CINZA}{progresso}{RESET}")
+            passou += 1
+        else:
+            print(f"  {VERMELHO}FAIL{RESET}  {desc}")
+            print(f"       {VERMELHO}{progresso}{RESET}  <- risco caiu com temp maior")
             falhou += 1
 
     print()

@@ -42,7 +42,7 @@ risco["medio"]   = fuzz.trimf(risco.universe, [20, 50, 75])
 risco["alto"]    = fuzz.trimf(risco.universe, [65, 85, 95])
 risco["critico"] = fuzz.trimf(risco.universe, [85, 100, 100])
 
-# ── Regras fuzzy (22 regras) ────────────────────────────────────────────────
+# ── Regras fuzzy (24 regras) ────────────────────────────────────────────────
 #
 # Risco CRÍTICO: exige temperatura alta ou crítica — frio nunca gera crítico
 # Risco ALTO:   combinações de calor + seca ou vento intenso
@@ -50,12 +50,13 @@ risco["critico"] = fuzz.trimf(risco.universe, [85, 100, 100])
 # Risco BAIXO:  temperatura baixa ou umidade alta
 
 regras = [
-    # --- Crítico (5 regras) ---
+    # --- Crítico (6 regras) ---
     ctrl.Rule(temperatura["critica"] & umidade["critica"],                          risco["critico"]),
     ctrl.Rule(temperatura["critica"] & vento["critico"],                            risco["critico"]),
     ctrl.Rule(temperatura["alta"]    & umidade["critica"] & vento["forte"],         risco["critico"]),
     ctrl.Rule(temperatura["alta"]    & umidade["critica"] & vento["critico"],       risco["critico"]),
     ctrl.Rule(temperatura["critica"] & umidade["baixa"]   & vento["forte"],         risco["critico"]),
+    ctrl.Rule(temperatura["alta"]    & umidade["baixa"]   & vento["critico"],       risco["critico"]),
 
     # --- Alto (7 regras) ---
     ctrl.Rule(temperatura["alta"]    & umidade["critica"],                          risco["alto"]),   # cobre alta+critica sem vento forte
@@ -64,15 +65,16 @@ regras = [
     ctrl.Rule(temperatura["media"]   & umidade["critica"],                          risco["alto"]),
     ctrl.Rule(temperatura["critica"] & umidade["media"],                            risco["alto"]),
     ctrl.Rule(temperatura["critica"] & umidade["baixa"],                            risco["alto"]),   # cobre critica+baixa sem vento forte
-    ctrl.Rule(vento["critico"]       & umidade["baixa"],                            risco["alto"]),
+    ctrl.Rule(temperatura["media"]   & vento["critico"] & umidade["baixa"],         risco["alto"]),  # temp media + vento extremo + seco
 
-    # --- Médio (6 regras) ---
+    # --- Médio (7 regras) ---
     ctrl.Rule(temperatura["media"]   & umidade["media"],                            risco["medio"]),
     ctrl.Rule(temperatura["media"]   & umidade["baixa"],                            risco["medio"]),  # cobre media+baixa
     ctrl.Rule(temperatura["alta"]    & umidade["media"],                            risco["medio"]),  # cobre alta+media
     ctrl.Rule(temperatura["alta"]    & umidade["alta"],                             risco["medio"]),
     ctrl.Rule(temperatura["critica"] & umidade["alta"],                             risco["medio"]),  # calor extremo com umidade alta
     ctrl.Rule(temperatura["baixa"]   & vento["forte"],                              risco["medio"]),
+    ctrl.Rule(temperatura["baixa"]   & vento["critico"],                            risco["medio"]),  # frio + vento extremo
 
     # --- Baixo (4 regras) ---
     ctrl.Rule(temperatura["baixa"]   & umidade["alta"],                             risco["baixo"]),
