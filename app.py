@@ -1,7 +1,6 @@
 import json
 import streamlit as st
 from charts.gauge import render_gauge
-from charts.fuzzy import render_fuzzy
 from components.fuzzy_engine import calcular_risco
 
 st.set_page_config(
@@ -58,13 +57,6 @@ with col_dir:
 
 st.divider()
 
-# ── Linha 2: Justificativa | Gráfico Fuzzy ──────────────────────────────────
-col_esq2, col_dir2 = st.columns([1, 2], gap="medium")
-
-with col_esq2:
-    st.markdown("### Justificativa")
-    st.info(st.session_state.justificativa, icon="📋")
-
-with col_dir2:
-    st.markdown("### Funções de Pertinência Fuzzy")
-    st.pyplot(render_fuzzy(st.session_state.probabilidade), use_container_width=True)
+# ── Linha 2: Justificativa ───────────────────────────────────────────────────
+st.markdown("### Justificativa")
+st.info(st.session_state.justificativa, icon="📋")
